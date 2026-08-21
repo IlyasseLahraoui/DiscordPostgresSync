@@ -26,4 +26,10 @@ app.MapGet("/health", () =>
 .WithName("GetHealth")
 .WithOpenApi();
 
+app.MapPost("/messages", (Message message) =>
+{
+    // Here you can add logic to process the message, e.g., save it to a database or send it to a message queue.
+    return Results.Ok(new { status = "message received", message = message });
+})
+
 app.Run();
