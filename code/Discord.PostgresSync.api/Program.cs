@@ -30,6 +30,25 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path == "/health")
+    {
+        await next();
+        return;
+    }
+
+    var requestApiKey = context.Request.Headers["X-Api-Key"].ToString();
+
+    if (!string.Equals(requestApiKey, apiKey, StringComparison.Ordinal))
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return;
+    }
+
+    await next();
+});
+
 app.MapGet("/health", async (IConfiguration configuration) =>
 {
     var connectionString = configuration.GetConnectionString("Postgres");
@@ -68,13 +87,8 @@ app.MapGet("/health", async (IConfiguration configuration) =>
 .WithName("GetHealth")
 .WithOpenApi();
 
-app.MapPost("/messages", (HttpRequest request, DiscordMessage message) =>
+app.MapPost("/messages", (DiscordMessage message) =>
 {
-    if (request.Headers["X-Api-Key"] != apiKey)
-    {
-        return Results.Unauthorized();
-    }
-
     if (string.IsNullOrWhiteSpace(message.MessageId) ||
       string.IsNullOrWhiteSpace(message.ChannelId) ||
       string.IsNullOrWhiteSpace(message.AuthorId))
@@ -91,15 +105,9 @@ app.MapPost("/messages", (HttpRequest request, DiscordMessage message) =>
 .WithOpenApi();
 
 app.MapPost("/messagesJson", async (
-    HttpRequest request,
     JsonElement payload,
     IConfiguration configuration) =>
 {
-    if (request.Headers["X-Api-Key"] != apiKey)
-    {
-        return Results.Unauthorized();
-    }
-
     if (payload.ValueKind != JsonValueKind.Object)
     {
         return Results.BadRequest(new
