@@ -1,0 +1,6 @@
+@DiscordPostgresSync_HostAddress = http://localhost:5081
+
+GET {{DiscordPostgresSync_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
